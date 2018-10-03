@@ -261,7 +261,7 @@ void loop(){
 
         //--------------------Horn control------------------
         if(isHornOn) {
-          tone(pinHorn, 150, 200);
+          tone(pinHorn, 150);
         } else {
           noTone(pinHorn);
         }
@@ -389,7 +389,7 @@ Automode Off        - t ->
 */
 
 /*
-====== PIN CONFIG ======
+====== PIN CONFIG =======
 Motor control1  :-> 13
 Motor control2  :-> 8
 Motor speed     :-> 11
