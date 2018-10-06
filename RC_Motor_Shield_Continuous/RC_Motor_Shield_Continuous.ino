@@ -33,6 +33,10 @@ int velocity = 100;
 unsigned long timer0 = 2000;  //Stores the time (in millis since execution started) 
 unsigned long timer1 = 0;  //Stores the time when the last command was received from the phone
 
+const long interval = 800;
+unsigned long previousMillis = 0; 
+int ledState = LOW; 
+
 int degree = 90;
 int isDegreeSet = 0;
 int hazardLightCounter = 0;
@@ -59,6 +63,11 @@ void setup()
   pinMode(pinMotorControl1, OUTPUT);
   pinMode(pinMotorControl2, OUTPUT);
   pinMode(pinMotorSpeedControl, OUTPUT);
+
+  pinMode(pinInteriorLight, OUTPUT);
+  pinMode(pinIndicatorLeft, OUTPUT);
+  pinMode(pinIndicatorRight, OUTPUT);
+
   
   myservo.attach(pinServo);  // attaches the servo on pin 5 to the servo object(Steering motor!)
 }
@@ -70,6 +79,8 @@ void loop(){
     myservo.write(90);  
     delay(500);
     isDegreeSet = 1;
+
+    tone(pinHorn, 150, 100);
   } else {
     if(Serial.available() > 0){ 
       timer1 = millis();   
@@ -195,79 +206,75 @@ void loop(){
           }
         }
 
-        //---------------Hazard Light/Fog light/Indicator On/Off control----------------
-        if(isHazardLightOn) {
-          if(hazardLightCounter > 1000) {
-            hazardLightCounter = 0;
-            
-            if(isHazardLightGlow) {
-              digitalWrite(pinIndicatorLeft, LOW);
-              digitalWrite(pinIndicatorRight, LOW);
-            } else {
-              digitalWrite(pinIndicatorLeft, HIGH);
-              digitalWrite(pinIndicatorRight, HIGH);
-            }
-            isHazardLightGlow = !isHazardLightGlow;
-          }
-          hazardLightCounter = hazardLightCounter + 10;
-        } else {
-
-          if(isFogLightOn) {
-            digitalWrite(pinIndicatorLeft, HIGH);
-            digitalWrite(pinIndicatorRight, HIGH);
-          } else {
-            if(isIndicatorOn) {
-              if(isLeftIndicatorOn) {
-                //Left indicator on
-
-                if(hazardLightCounter > 1000) {
-                  hazardLightCounter = 0;
-            
-                  if(isHazardLightGlow) {
-                    digitalWrite(pinIndicatorLeft, LOW);
-                    digitalWrite(pinIndicatorRight, LOW);
-                  } else {
-                    digitalWrite(pinIndicatorLeft, HIGH);
-                    digitalWrite(pinIndicatorRight, LOW);
-                  }
-                  isHazardLightGlow = !isHazardLightGlow;
-                }
-                hazardLightCounter = hazardLightCounter + 10;
-                
-              } else {
-                //Right indicator on
-                if(hazardLightCounter > 1000) {
-                  hazardLightCounter = 0;
-            
-                  if(isHazardLightGlow) {
-                    digitalWrite(pinIndicatorLeft, LOW);
-                    digitalWrite(pinIndicatorRight, LOW);
-                  } else {
-                    digitalWrite(pinIndicatorLeft, HIGH);
-                    digitalWrite(pinIndicatorRight, LOW);
-                  }
-                  isHazardLightGlow = !isHazardLightGlow;
-                }
-                hazardLightCounter = hazardLightCounter + 10;
-              }
-            } else {
-              digitalWrite(pinIndicatorLeft, LOW);
-              digitalWrite(pinIndicatorRight, LOW);
-              hazardLightCounter = 0;
-            }
-          }
-          
-        }
-
         //--------------------Horn control------------------
         if(isHornOn) {
           tone(pinHorn, 150);
         } else {
           noTone(pinHorn);
         }
-
         
       }
+      
+      //---------------Hazard Light/Fog light/Indicator On/Off control----------------
+      if(isHazardLightOn) {
+        unsigned long currentMillis = millis();
+        if (currentMillis - previousMillis >= interval) {
+            previousMillis = currentMillis;        
+            if (ledState == LOW) {
+              ledState = HIGH;
+            } else {
+              ledState = LOW;
+            }        
+            digitalWrite(pinIndicatorLeft, ledState);
+            digitalWrite(pinIndicatorRight, ledState);
+         }
+      } else {
+         if(isFogLightOn) {
+            digitalWrite(pinIndicatorLeft, HIGH);
+            digitalWrite(pinIndicatorRight, HIGH);
+          } else {
+            if(isIndicatorOn) {
+              if(isLeftIndicatorOn) {
+                //Left indicator on/off
+                unsigned long currentMillis = millis();
+                if (currentMillis - previousMillis >= interval) {
+                    previousMillis = currentMillis;
+                
+                    if (ledState == LOW) {
+                      ledState = HIGH;
+                    } else {
+                      ledState = LOW;
+                    }                
+                    digitalWrite(pinIndicatorLeft, ledState);
+                    digitalWrite(pinIndicatorRight, LOW);
+                 }
+                
+              } else {
+                //Right indicator on/off
+                unsigned long currentMillis = millis();
+                if (currentMillis - previousMillis >= interval) {
+                    previousMillis = currentMillis;
+                
+                    if (ledState == LOW) {
+                      ledState = HIGH;
+                    } else {
+                      ledState = LOW;
+                    }
+                
+                    digitalWrite(pinIndicatorLeft, LOW);
+                    digitalWrite(pinIndicatorRight, ledState);
+                 }
+              }
+            } else {
+              digitalWrite(pinIndicatorLeft, LOW);
+              digitalWrite(pinIndicatorRight, LOW);
+              hazardLightCounter = 0;
+              ledState = LOW;
+            }
+          }
+      }
+
+
 //    }
 //    else{
 //      timer0 = millis();  //Get the current time (millis since execution started).
@@ -396,13 +403,13 @@ Motor speed     :-> 11
 
 Servo motor     :-> 5
 
-Head light      :-> 7
-Head light2     :-> 4
+Head light      :-> 7+
+Head light2     :-> 4+
 
 Indicator Left  :-> 6
 Indicator Right :-> 9
 
-Interior light  :-> 10
+Interior light  :-> 10+
 
 Horn            :-> 12
 
